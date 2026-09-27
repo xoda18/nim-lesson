@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Game from Marienbad</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="icon" href="data:," />
+  </head>
+  <body>
+    <main>
+      <p class="kicker">Aeneas Math &middot; Lesson</p>
+
+      <!-- Page 1 -->
+      <section id="page-1" class="page">
+        <h1>The game from Marienbad</h1>
+
+        <p class="lede">
+          In a strange old hotel, a man plays a simple game with matches against the other guests.
+          He wins every time.
+        </p>
+
+        <p>
+          This is a scene from the French film <em>Last Year at Marienbad</em> (1961). The rules
+          are simple. 16 matches lie in four rows of 1, 3, 5 and 7. Two players take turns. On your
+          turn you take as many matches as you like (at least one), but only from one row. The
+          player who takes the last match wins.
+        </p>
+
+        <p class="invitation">
+          (In the film, the player who takes the last match loses. We play the more common version.
+          The idea is almost the same.)
+        </p>
+
+        <p>The man always lets his opponent start. Try it yourself below. You go first.</p>
+
+        <div class="board" data-board="intro"></div>
+
+        <p>
+          The game is very old and is called Nim. In 1901 Charles Bouton, a mathematician at
+          Harvard, worked out a complete winning strategy. In the 1930s Roland Sprague in Germany
+          and Patrick Grundy in England, working independently, proved something much stronger:
+          <em>every</em> game of this kind is Nim in disguise.
+        </p>
+
+        <p>
+          By the end of this lesson you will know what that means, and why the man in the hotel
+          never loses.
+        </p>
+      </section>
+
+      <!-- Page 2 -->
+      <section id="page-2" class="page hidden">
+        <h1>One row, small steps</h1>
+
+        <p>
+          This one is easier. There is only one row of 21 matches. On your turn you take 1, 2 or 3
+          matches. The player who takes the last match wins. You go first.
+        </p>
+
+        <p class="invitation">
+          Can you find a way to always win? Play a few games, look for a pattern, and tell your
+          tutor your idea. Tip: start small. Who wins with 1 match? With 4? With 5?
+        </p>
+
+        <div class="board" data-chat="take123"></div>
+
+        <div class="hints" data-chat="take123">
+          <button type="button" class="btn-secondary hint-btn">Show a hint</button>
+          <ol class="hint-list"></ol>
+        </div>
+
+        <div class="chat" data-chat="take123" data-placeholder="Share your idea…"></div>
+
+        <div class="exercise">
+          <p class="exercise-kicker">Exercise</p>
+          <h2>Fort Boyard</h2>
+          <p>
+            On the French TV show <em>Fort Boyard</em>, candidates play this game against the
+            Master of Time to win extra seconds. There are 21 sticks, you take 1, 2 or 3, and the
+            candidate goes first. One rule is different from the game above: here the player who
+            takes the last stick <strong>loses</strong>.
+          </p>
+          <p class="invitation">
+            What is the winning strategy now? And can the candidate win at all? Play the Master
+            below and tell your tutor what you think.
+          </p>
+
+          <div class="board" data-chat="boyard"></div>
+
+          <div class="hints" data-chat="boyard">
+            <button type="button" class="btn-secondary hint-btn">Show a hint</button>
+            <ol class="hint-list"></ol>
+          </div>
+
+          <div class="chat" data-chat="boyard" data-placeholder="Your strategy…"></div>
+        </div>
+      </section>
+
+      <!-- Page 3 -->
+      <section id="page-3" class="page hidden">
+        <h1>Many rows: Bouton's trick</h1>
+
+        <p>
+          Back to many rows, where you may take any number of matches from one row. With several
+          rows the pattern is much harder to guess, so here is the trick Bouton found.
+        </p>
+
+        <p>
+          Step 1. Split every row into powers of two: 1, 2, 4, 8, &hellip; Every whole number can be
+          written as a sum of <em>different</em> powers of two in exactly one way. For example,
+          7&nbsp;=&nbsp;4+2+1, 5&nbsp;=&nbsp;4+1, 3&nbsp;=&nbsp;2+1, 6&nbsp;=&nbsp;4+2.
+        </p>
+
+        <p>
+          Step 2. Look at all rows together and count how many times each power appears. If every
+          power appears an <em>even</em> number of times, we call the position
+          <strong>balanced</strong>. If not, it is <strong>unbalanced</strong>.
+        </p>
+
+        <p>Here is the game from Marienbad, 1-3-5-7:</p>
+
+        <div class="value-table-wrap">
+          <table class="value-table">
+            <tr><th>row</th><th>4</th><th>2</th><th>1</th></tr>
+            <tr><td>1</td><td></td><td></td><td>1</td></tr>
+            <tr><td>3</td><td></td><td>2</td><td>1</td></tr>
+            <tr><td>5</td><td>4</td><td></td><td>1</td></tr>
+            <tr><td>7</td><td>4</td><td>2</td><td>1</td></tr>
+            <tr><th>count</th><th>2</th><th>2</th><th>4</th></tr>
+          </table>
+        </div>
+
+        <p>All the counts are even, so 1-3-5-7 is balanced.</p>
+
+        <p>
+          <strong>Bouton's theorem.</strong> If the position is balanced, the player to move loses,
+          as long as the opponent plays well. If it is unbalanced, the player to move can always
+          make it balanced, and win.
+        </p>
+
+        <p>Why does this work? Two facts:</p>
+        <ul class="facts">
+          <li>
+            Any move from a balanced position makes it unbalanced. You change only one row, so at
+            least one power changes its count by one, and an even count becomes odd.
+          </li>
+          <li>From an unbalanced position there is always a move that makes it balanced.</li>
+        </ul>
+
+        <p>
+          The end of the game, when no matches are left, is balanced. So if you always hand your
+          opponent a balanced position, they can never take the last match, and you will be the one
+          who takes it.
+        </p>
+
+        <p class="page-intro-quote">
+          This is the secret from Marienbad: 1-3-5-7 is balanced, which is why the man lets his
+          opponent start.
+        </p>
+
+        <p class="invitation">
+          A note on words: mathematicians call this counting the "nim-sum", and programmers know it
+          as XOR. You won't need either word in this lesson. More on
+          <a href="https://en.wikipedia.org/wiki/Nim" target="_blank" rel="noopener noreferrer">Nim on Wikipedia</a>.
+        </p>
+
+        <div class="exercise">
+          <p class="exercise-kicker">Exercise</p>
+          <h2>Balance it</h2>
+          <p class="invitation">
+            Rows of 3, 4 and 5. It is your move. Find the move that makes the position balanced,
+            then beat the computer. Tell your tutor your move and why it works.
+          </p>
+
+          <div class="board" data-chat="nim"></div>
+          <div class="widget" data-widget="binary_helper" data-chat="nim" hidden></div>
+
+          <div class="hints" data-chat="nim">
+            <button type="button" class="btn-secondary hint-btn">Show a hint</button>
+            <ol class="hint-list"></ol>
+          </div>
+
+          <div class="chat" data-chat="nim" data-placeholder="Your move and why…"></div>
+        </div>
+      </section>
+
+      <!-- Page 4 -->
+      <section id="page-4" class="page hidden">
+        <h1>Every game is Nim in disguise</h1>
+
+        <p>
+          Take the game from page 2 again: one row, take 1, 2 or 3. It does not look like Nim.
+          Still, we can give every position a number, its <strong>Nim value</strong>, which tells us
+          which Nim row it behaves like.
+        </p>
+
+        <p>
+          The rule: a position with no moves has value 0. For any other position, list the values
+          of all the positions you can move to. The Nim value is the
+          <em>smallest number (0, 1, 2, &hellip;) that is not on the list</em>.
+        </p>
+
+        <p>For "take 1, 2 or 3":</p>
+        <ul class="facts">
+          <li>0 matches: no moves, so the value is 0.</li>
+          <li>1 match: you can go to 0 (value 0). The smallest missing number is 1.</li>
+          <li>2 matches: you can go to 1 or 0, with values 1 and 0. The value is 2.</li>
+          <li>3 matches: the values you can reach are 2, 1 and 0. The value is 3.</li>
+          <li>4 matches: you can go to 3, 2 or 1, with values 3, 2 and 1. 0 is missing, so the value is 0.</li>
+        </ul>
+
+        <div class="value-table-wrap">
+          <table class="value-table" id="table-take123"></table>
+        </div>
+
+        <p>
+          Look where the 0s are: at 0, 4, 8 and 12. These are exactly the losing positions from
+          page 2.
+        </p>
+
+        <p>
+          A Nim row of n matches has Nim value n, because from it you can move to every smaller
+          number. Sprague and Grundy proved that this works for every game of this kind:
+        </p>
+
+        <p class="page-intro-quote">
+          <strong>The Sprague-Grundy theorem.</strong> A position with Nim value v behaves exactly
+          like a Nim row of v matches.
+        </p>
+
+        <p>
+          So a row of 6 in the "take 1, 2 or 3" game acts just like a Nim row of 2. When several
+          games are played side by side (on your turn you move in one of them), you replace each
+          game by its Nim value and use Bouton's trick on those values.
+        </p>
+
+        <p>
+          Sprague published this in 1935 and Grundy in 1939, without knowing about each other's
+          work. Decades later John Conway, Elwyn Berlekamp and Richard Guy built a whole theory of
+          games on top of it in their book <em>Winning Ways for your Mathematical Plays</em> (1982).
+          More on
+          <a href="https://en.wikipedia.org/wiki/Sprague%E2%80%93Grundy_theorem" target="_blank" rel="noopener noreferrer">the Sprague-Grundy theorem on Wikipedia</a>.
+        </p>
+
+        <div class="widget" data-widget="value_table" data-chat="grundy" hidden></div>
+
+        <p class="invitation">Questions about Nim values or the theorem? Ask your tutor.</p>
+        <div class="chat" data-chat="grundy" data-placeholder="Ask a question…"></div>
+      </section>
+
+      <!-- Page 5 -->
+      <section id="page-5" class="page hidden">
+        <h1>Practice</h1>
+        <p>Two exercises. Each one has its own tutor chat and Hint button.</p>
+
+        <div class="exercise">
+          <p class="exercise-kicker">Exercise A</p>
+          <h2>A new rule</h2>
+          <p class="invitation">
+            One row. On your turn you take 1, 3 or 4 matches. Find the Nim values for rows of 0 to
+            9 matches. Do you see a pattern?
+          </p>
+
+          <div class="hints" data-chat="values">
+            <button type="button" class="btn-secondary hint-btn">Show a hint</button>
+            <ol class="hint-list"></ol>
+          </div>
+          <div class="chat" data-chat="values" data-placeholder="Your values…"></div>
+        </div>
+
+        <div class="exercise">
+          <p class="exercise-kicker">For the curious</p>
+          <h2>Three games at once</h2>
+          <p>
+            One board with three rows, and each row has its own rule. Row A is a Nim row of 3 (take
+            any number). Row B has 6 matches and the rule "take 1, 2 or 3". Row C has 5 matches and
+            the rule "take 1, 3 or 4". On your turn you pick one row and move by its rule. Whoever
+            takes the last match on the whole board wins. You go first.
+          </p>
+          <p class="invitation">Beat the computer, and explain your first move using Nim values.</p>
+
+          <div class="board" data-chat="star"></div>
+          <div class="widget" data-widget="binary_helper" data-chat="star" hidden></div>
+
+          <div class="hints" data-chat="star">
+            <button type="button" class="btn-secondary hint-btn">Show a hint</button>
+            <ol class="hint-list"></ol>
+          </div>
+          <div class="chat" data-chat="star" data-placeholder="Your plan…"></div>
+        </div>
+      </section>
+
+      <!-- Page 6 -->
+      <section id="page-6" class="page hidden">
+        <h1>Where this shows up</h1>
+
+        <p>
+          AlphaZero is the program that beat the best players in the world at chess and Go. It
+          has real trouble with Nim. In 2022 Bei Zhou and Søren Riis trained programs like it on
+          Nim and found that they play well on small boards but can't keep up as the boards get
+          bigger. The winning rule depends on whether counts are even or odd, which is exactly what
+          you did with powers of two, and neural networks are bad at learning that kind of rule.
+          (<a href="https://arxiv.org/abs/2205.12787" target="_blank" rel="noopener noreferrer">the paper</a>)
+        </p>
+
+        <p>
+          In 1951 the British company Ferranti built Nimrod, one of the first computers made to
+          play a game. It could only play Nim. It drew crowds at the Festival of Britain and then at
+          an industry fair in Berlin. In Berlin the West German economics minister, Ludwig Erhard,
+          played it three times and lost every game.
+          (<a href="https://en.wikipedia.org/wiki/Nimrod_(computer)" target="_blank" rel="noopener noreferrer">Nimrod on Wikipedia</a>)
+        </p>
+
+        <p>
+          Error-correcting codes let you send data so that it arrives correctly even if a few bits
+          get damaged on the way. In 1986 John Conway and Neil Sloane found that some of the best
+          known codes come out of games: list the losing positions of the right game and you get
+          the code. One of them is the Golay code. Around 1980, Voyager 1 and 2 used it to send
+          color pictures of Jupiter and Saturn back to Earth. The code was invented in 1949, long
+          before anyone thought it had anything to do with games.
+          (<a href="https://en.wikipedia.org/wiki/Lexicographic_code" target="_blank" rel="noopener noreferrer">lexicographic codes</a>)
+        </p>
+      </section>
+
+      <nav class="page-nav" aria-label="Lesson pages">
+        <button id="back-btn" type="button" class="btn-secondary">Back</button>
+        <div class="page-dots" id="page-dots"></div>
+        <button id="next-btn" type="button" class="btn-primary">Next</button>
+      </nav>
+    </main>
+    <script src="games.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
