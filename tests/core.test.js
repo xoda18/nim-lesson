@@ -128,7 +128,7 @@ test("evidence: copying an opened hint does not count; the same words before ope
 test("evidence: values do not count once the tutor has given most of them away", () => {
   const h = [
     { role: "user", content: "is it 5 -> 2, 6 -> 2, 7 -> 3?" },
-    { role: "assistant", content: "Close: 5 → 3, 6 → 2 and 7 → 0." },
+    { role: "assistant", content: "Close: 5 → 3, 6 → 2, 7 → 0 and 8 → 1." },
     { role: "user", content: "ok so 0 1 0 1 2 3 2 0 1 0" },
   ];
   const ev = [{ criterion: "values", quote: "0 1 0 1 2 3 2 0 1 0" }];
@@ -165,4 +165,116 @@ test("fort boyard: the computer always wins from 21, and the winner is the one w
     last = S.playMove(s, m);
   }
   assert.strictEqual(last.winner, "student");
+});
+
+const V = require("../lib/values");
+const { replyProblem } = require("../lib/tools");
+const { QA } = require("../lib/lesson");
+const chat = (...msgs) => msgs.map((content, i) => ({ role: i % 2 ? "assistant" : "user", content }));
+
+test("values: a table split over two messages counts at once", () => {
+  assert.ok(V.valuesCriterionMet(chat("0 1 0 1 2 3 2 0 1", "You have 9 numbers, add one more.", "0")));
+});
+
+test("values: the tutor may confirm what the student said, not contradict or reveal it", () => {
+  const h = chat("The value of 4 is 2 and 5 is 3");
+  assert.strictEqual(replyProblem(EXERCISES.values, "Yes, 4 is 2 and 5 is 3.", h), null);
+  assert.match(replyProblem(EXERCISES.values, "Check again: 4 is 1.", h), /wrong values/);
+  assert.match(replyProblem(EXERCISES.values, "And 7 is 0.", h), /gives away/);
+});
+
+test("values: guessing with the tutor's help does not count", () => {
+  const h = chat("is 5 -> 2 and 7 -> 3?", "5 is 3, 7 is 0 and 8 is 1.", "0 1 0 1 2 3 2 0 1 0");
+  assert.strictEqual(V.valuesCriterionMet(h), false);
+});
+
+test("values: the order-mix-up is flagged as unclear, not wrong", () => {
+  const lines = V.stateLines(chat("You can move to 4 2 1 with values 1 0 and 2")).join("\n");
+  assert.match(lines, /different order/);
+  assert.doesNotMatch(lines, /WRONG/);
+});
+
+test("values: number words and Russian count", () => {
+  assert.ok(V.fullTableGiven(chat("zero one zero one two three two zero one zero")));
+  assert.ok(V.fullTableGiven(chat("ноль один ноль один два три два ноль один ноль")));
+});
+
+test("page 3 questions chat: cannot reveal or analyse the 3-4-5 exercise", () => {
+  assert.ok(replyProblem(QA.bouton, "Then you get 1, 4, 5, which is balanced.", []));
+  assert.ok(replyProblem(QA.bouton, "Take 2 from the row of 3.", []));
+  assert.strictEqual(replyProblem(QA.bouton, "Try it on 1, 2, 3 instead.", []), null);
+  const run = makeRunner({ blockedPositions: QA.bouton.blockedPositions });
+  assert.ok(run("analyze_position", { rows: [5, 3, 4].map((size) => ({ game: "nim", size })) }).error);
+  assert.ok(!run("analyze_position", { rows: [1, 2, 3].map((size) => ({ game: "nim", size })) }).error);
+});
+
+test("values: labeled answers like v0=0, v(5)=3 keep their sizes", () => {
+  const claims = V.studentClaims(chat("v0=0, v1=1, v2=0, v3=1, v4=2, v5=3. And g(6)=2"));
+  assert.deepStrictEqual([...claims.entries()].sort((a, b) => a[0] - b[0]), [[0, 0], [1, 1], [2, 0], [3, 1], [4, 2], [5, 3], [6, 2]]);
+  assert.doesNotMatch(V.stateLines(chat("my final answers are v3=1, v4=2, v5=3")).join(), /WRONG/);
+});
+
+test("values: a wrong value used inside the reasoning is marked wrong", () => {
+  const lines = V.stateLines(chat("from 5 I reach 4, 2, 1 with values 0, 1, 2, so 5 is 3")).join("\n");
+  assert.match(lines, /5 → 3 \(right\)/);
+});
+
+test("answer lists: the tutor cannot hand over 1, 5, 9 or 4, 8, 12 before the student says them", () => {
+  const ask = chat("I took 3 sticks, 18 left, good move?");
+  assert.ok(replyProblem(EXERCISES.boyard, "Look at the numbers 1, 5, 9, 13, 17.", ask));
+  assert.ok(replyProblem(EXERCISES.take123, "Try to leave 4, 8, 12.", chat("no idea")));
+  assert.strictEqual(replyProblem(EXERCISES.boyard, "Yes, 1, 5, 9, 13, 17 is it.", chat("I leave 1, 5, 9, 13 or 17")), null);
+  assert.strictEqual(replyProblem(EXERCISES.take123, "You have 21 matches.", ask), null);
+});
+
+test("values: the tutor may not dispute a right value or praise a wrong one", () => {
+  const h = chat("From 4 I can reach 3, 1, 0. Their values are v3=1, v1=1, v0=0. Final answer: v(4)=2.");
+  assert.match(replyProblem(EXERCISES.values, "Have another look at 1. Its value isn't 1.", h), /is right/);
+  const w = chat("4 has value 0, 2 has value 1, 1 has value 2 so 5 is 3");
+  assert.match(replyProblem(EXERCISES.values, "Value for 4 looks right, but check 2 and 1.", w), /WRONG/);
+  assert.strictEqual(replyProblem(EXERCISES.values, "Have another look at 4.", w), null);
+});
+
+test("values: a table built from scattered pairs over several turns counts, even after the tutor recaps it", () => {
+  const h = chat(
+    "v4=2, v7=0, v1=1",
+    "Those three are right. What about the rest?",
+    "v0=0, v2=0, v3=1, v5=3, v6=2, v8=1, v9=0",
+    "So your full table is: 0, 1, 0, 1, 2, 3, 2, 0, 1, 0.",
+    "so I'm done?",
+  );
+  assert.ok(V.valuesCriterionMet(h));
+});
+
+test("answer phrases: the rule in words is blocked until the student says it or the rule is met", () => {
+  const ask = chat("Я взял 3 палочки, осталось 18. Хороший ход?");
+  assert.ok(replyProblem(EXERCISES.boyard, "Это число на один больше кратного 4?", ask));
+  assert.ok(replyProblem(EXERCISES.boyard, "Leave one more than a multiple of 4.", ask));
+  assert.strictEqual(replyProblem(EXERCISES.boyard, "Leave one more than a multiple of 4.", ask, { rule: {} }), null);
+  assert.ok(replyProblem(EXERCISES.take123, "Leave a multiple of 4.", chat("help")));
+  assert.strictEqual(replyProblem(EXERCISES.take123, "Yes, a multiple of 4.", chat("I leave a multiple of 4")), null);
+});
+
+test("answer phrases: naming the rule after the student listed the numbers is fine", () => {
+  assert.strictEqual(replyProblem(EXERCISES.take123, "Yes, multiples of 4.", chat("I leave 4, 8, 12")), null);
+});
+
+test("values: a bare guess is not confirmed, and confirmed guesses do not count", () => {
+  assert.ok(replyProblem(EXERCISES.values, "Yes, 6 gives value 2. Nice!", chat("is 6 -> 2?")));
+  assert.strictEqual(replyProblem(EXERCISES.values, "Yes, that's right.", chat("from 6 I reach 5, 3, 2 with values 3, 1, 0, so 6 is 2?")), null);
+  const h = chat("is 6 -> 2?", "Yes!", "is 7 -> 0?", "Yes!", "is 5 -> 3?", "Right.", "0 1 0 1 2 3 2 0 1 0");
+  assert.strictEqual(V.valuesCriterionMet(h), false);
+});
+
+test("values: other ways of confirming a bare guess are caught too", () => {
+  for (const r of ["That one's right, but show the work.", "6 → 2 is correct.", "Это верно."]) {
+    assert.ok(replyProblem(EXERCISES.values, r, chat("is 6 -> 2?")), r);
+  }
+});
+
+test("values: Russian guesses are recognised", () => {
+  const h = chat("6 это 2?");
+  assert.ok(replyProblem(EXERCISES.values, "Верно! Молодец", h));
+  assert.strictEqual(replyProblem(EXERCISES.values, "Давай проверим: куда можно попасть из 6?", h), null);
+  assert.ok(V.fullTableGiven(chat("значение 0 равно 0, 1 равно 1, 2 равно 0, 3 равно 1, 4 равно 2, 5 равно 3, 6 равно 2, 7 равно 0, 8 равно 1, 9 равно 0")));
 });

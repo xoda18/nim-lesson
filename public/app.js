@@ -86,6 +86,11 @@ function createBoard(container, { onMove, onReset, misere = false }) {
   let piles = [];
   let locked = false;
 
+  const badge = el(
+    "p",
+    `board-badge ${misere ? "lose" : "win"}`,
+    misere ? "Taking the last stick LOSES" : "Taking the last match WINS",
+  );
   const rowsEl = el("div");
   const note = el("p", "board-note");
   const status = el("p", "board-status");
@@ -93,7 +98,7 @@ function createBoard(container, { onMove, onReset, misere = false }) {
   const resetBtn = el("button", "btn-secondary btn-small", "Start again");
   resetBtn.type = "button";
   actions.appendChild(resetBtn);
-  container.append(note, rowsEl, status, actions);
+  container.append(badge, note, rowsEl, status, actions);
 
   resetBtn.addEventListener("click", async () => {
     if (locked) return;
@@ -120,7 +125,7 @@ function createBoard(container, { onMove, onReset, misere = false }) {
       const label = el("div", "board-row-label");
       const name = el("strong", "", `${piles.length > 1 ? `Row ${String.fromCharCode(65 + rowIndex)}: ` : ""}${pile.size}`);
       const rule = G.RULES[pile.game].label.replace("Nim row (take any number)", "take any number");
-      label.append(name, el("div", "", misere ? `${rule}, last stick loses` : rule));
+      label.append(name, el("div", "", rule));
       const matches = el("div", "matches");
       const legal = G.takeOptions(pile.game, pile.size);
 

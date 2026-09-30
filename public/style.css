@@ -543,3 +543,28 @@ ul.facts li {
   font-size: 1.1rem;
   margin-bottom: 0.5rem;
 }
+
+.board-badge {
+  display: inline-block;
+  margin: 0 0 0.7rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.board-badge.win {
+  background: #d7edd0;
+  color: #1e5c2a;
+}
+
+.board-badge.lose {
+  background: #f6d9d4;
+  color: #8a2a1e;
+}
+
+@media (prefers-color-scheme: dark) {
+  .board-badge.win { background: #1d3a1e; color: #a9e2a0; }
+  .board-badge.lose { background: #3f1f1a; color: #f0b3a8; }
+}

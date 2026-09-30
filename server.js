@@ -9,6 +9,7 @@ const { staticPrompt, statePrompt } = require("./lib/prompts");
 const { toolsFor, makeRunner, verifyEvidence, validateActions, replyProblem } = require("./lib/tools");
 const { runTurn } = require("./lib/llm");
 const S = require("./lib/sessions");
+const V = require("./lib/values");
 const { createLimiter } = require("./lib/ratelimit");
 const G = require("./public/games");
 
@@ -29,7 +30,7 @@ function clientIp(req) {
 }
 
 // Rules whose values are the point of an exercise elsewhere: those chats may not compute them.
-const BLOCKED_GAMES = Object.freeze({ __proto__: null, grundy: ["take_1_3_4"], take123: ["take_1_3_4"], boyard: ["take_1_3_4"], nim: ["take_1_3_4"] });
+const BLOCKED_GAMES = Object.freeze({ __proto__: null, grundy: ["take_1_3_4"], bouton: ["take_1_3_4"], take123: ["take_1_3_4"], boyard: ["take_1_3_4"], nim: ["take_1_3_4"] });
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -154,26 +155,53 @@ async function handleChat(body, res, req) {
         apiKey: process.env.ANTHROPIC_API_KEY,
         model: MODEL,
         staticSystem: staticPrompt(session.chat),
-        stateSystem: statePrompt(session.chat, session) + (note ? `\n\nCORRECTION: ${note}` : ""),
+        stateSystem: statePrompt(session.chat, session, history) + (note ? `\n\nCORRECTION: ${note}` : ""),
         history,
         tools: toolsFor(def),
         runTool: makeRunner({
           blockedGames: BLOCKED_GAMES[session.chat] || [],
+          blockedPositions: def.blockedPositions || [],
           misere: Boolean(def.board && def.board.misere),
         }),
       });
+    // Checked before the tutor answers, so a correct table is never met with "how did you get it?".
+    let progressedBefore = false;
+    if (def.guard === "values_take_1_3_4" && V.valuesCriterionMet(history)) {
+      progressedBefore = S.markCriterion(session, "values", "the student gave the full correct table");
+      S.updateResolved(session);
+    }
+
+    const auto = def.autoCriterion;
+    if (auto && session.criteria[auto.after] && !session.criteria[auto.id] && auto.all.every((re) => re.test(text))) {
+      progressedBefore = S.markCriterion(session, auto.id, `student wrote: "${text.slice(0, 120)}"`) || progressedBefore;
+      S.updateResolved(session);
+    }
+
     let { respond, usage, toolCalls } = await turn();
-    const problem = replyProblem(def, String(respond.reply || ""));
+    const problem = replyProblem(def, String(respond.reply || ""), history, session.criteria);
     if (problem) {
       ({ respond, usage, toolCalls } = await turn(problem));
-      if (replyProblem(def, String(respond.reply || ""))) {
-        respond = { ...respond, reply: "Let's check it step by step. Pick one size, say 5: which sizes can you reach from it, what are their values, and which number is missing?" };
+      if (replyProblem(def, String(respond.reply || ""), history, session.criteria)) {
+        const guessed = def.guard === "values_take_1_3_4" && V.bareGuess(text);
+        respond = {
+          ...respond,
+          reply: guessed
+            ? "Show me how you got it. From that size, which sizes can you reach, what are their values, and which number is missing?"
+            : "Let me make sure I follow. Which size are you working on right now, and what do you get for it?",
+        };
       }
     }
     if (LOG_USAGE) console.log(JSON.stringify({ chat: session.chat, usage, toolCalls: toolCalls.map((t) => t.name) }));
 
     const raw = typeof respond.reply === "string" && respond.reply.trim() ? respond.reply.trim() : "Sorry, could you say that again?";
-    const reply = raw.replace(/\s*[—–]\s*/g, ", ").replace(/\s+--\s+/g, ", ");
+    const reply = raw
+      .replace(/\s*[—–]\s*/g, ", ")
+      .replace(/\s+--\s+/g, ", ")
+      .replace(/\*\*(.+?)\*\*/g, "$1")
+      .replace(/^, /, "")
+      .replace(/^(?:good|great|excellent)\s+(?:question|catch|point|thing|idea)(?:\s+to\s+\w+)?[!.,]\s+/i, "")
+      .replace(/""(\s*)$/, '"$1')
+      .replace(/^./, (c) => c.toUpperCase());
     session.history = [...history, { role: "assistant", content: reply }];
 
     const { accepted, rejected } = verifyEvidence({
@@ -183,10 +211,10 @@ async function handleChat(body, res, req) {
       alreadyMet: session.criteria,
       hintsShown: session.hintsShown,
     });
-    let progressed = false;
+    let progressed = progressedBefore;
     for (const a of accepted) progressed = S.markCriterion(session, a.criterion, `student wrote: "${a.quote}"`) || progressed;
     session.turnsWithoutProgress = progressed ? 0 : session.turnsWithoutProgress + 1;
-    const newlyResolved = S.updateResolved(session);
+    const newlyResolved = S.updateResolved(session) || (progressedBefore && session.resolved);
 
     const known = new Set((def.likely || []).map((l) => l.id).filter(Boolean));
     for (const m of Array.isArray(respond.misconceptions) ? respond.misconceptions : []) {
